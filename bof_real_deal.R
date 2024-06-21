@@ -1,5 +1,5 @@
-## clear memory
-rm(list = ls())
+# run bof_data_prep.R
+# source('bof_data_prep.R')
 
 ## LOAD LIBRARIES
 library(tidyverse)
@@ -7,9 +7,6 @@ library(sf)
 library(dplyr)
 library(mapview)
 library(tmap)
-
-# run bof_data_prep.R
-source('bof_data_prep.R')
 
 ## ADD GEOMETRY AND MAKE INTO SF OBJECT
 #matrix of lat and long
@@ -28,7 +25,8 @@ tmpdat_sf = st_sf(tmpdat, geometry = locs_sfc)    # sf object
 rm(locs, locs_pts, locs_sfc)
 
 ## CREATE A GRID WITH SPATIAL INFORMATION AND GRID_IDS
-area_grid = st_make_grid(tmpdat_sf, c(0.2, 0.2), what = "polygons", square = FALSE)
+cell_size = 0.1
+area_grid = st_make_grid(tmpdat_sf, c(cell_size, cell_size), what = "polygons", square = FALSE)
 
 # define study area as a polygon
 #bof polygon from a file that i had on my computer
@@ -269,22 +267,16 @@ for (i in 1:num_ssn){ #loop about season number, effort_list[[i]]
   repeatVisits[is.na(repeatVisits)] = 0 #change NA to zero
   repeatVisits[repeatVisits>0] = 1 #change effort>0 to 1
   repeatVisits = rowSums(repeatVisits) #sum number of visits to each site
+  
+  # plot repeat visits to each grid cell within each season
   plot(repeatVisits,
        main = paste("Repeats within season ", i, sep = ""),
-       xlab = "grid_id",
+       xlab = "grid cell",
        ylab = "number repeat visits")
-  # hist(repeatVisits,
-  #      breaks = c(0,1,2,3,5,10,15,20),
-  #      main = "number of repeats within this season",
-  #      xlab = "grid_id",
-  #      ylab = "number repeat visits")
-  
 }
 
 
-# Plot effort and save plots
-# ALSO DO THIS FOR # REPEATS
-# for (i in 1:(dim(num_survs)[1])){
+# Plot effort for one survey
 i=2
 voi = effort_list[[i]]
 col_name = names(voi)[3] #FILEID (could also be date)
@@ -306,28 +298,3 @@ map_fishnet = tm_shape(voi) +
   ) +
   tm_borders(col = "grey40", lwd = 0.7)
 map_fishnet
-# tmap_save(map_fishnet, filename = paste0(col_name, ".png", sep = ""))
-# }
-
-
-# # now we would like to make a plot of some sightings.
-# dat_map = HAPO_grid_sf
-# tmap_mode("view")
-# map_fishnet = tm_shape(dat_map) +
-#   tm_fill(
-#     col = "p116214",
-#     palette = "Reds",
-#     style = "cont",
-#     title = "# sightings",
-#     id = "grid_id",
-#     showNA = FALSE,
-#     alpha = 0.5,
-#     popup.vars = c(
-#       "HAPOs " = "p116214"
-#     ),
-#     popup.format = list(
-#       p116214 = list(format = "f", digits = 0)
-#     )
-#   ) +
-#   tm_borders(col = "grey40", lwd = 0.7)
-# map_fishnet

@@ -1,5 +1,8 @@
 #BOF DATA PREP
 
+rm(list = ls())
+library(tidyverse)
+
 ## inputs
 #years
 begYEAR = 2005
