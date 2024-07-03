@@ -5,8 +5,8 @@ library(tidyverse)
 
 ## inputs
 #years
-begYEAR = 2005
-endYEAR = 2010
+begYEAR = 2003
+endYEAR = 2016
 
 #months
 begMONTH = 8
@@ -15,11 +15,14 @@ endMONTH = 9
 #seasons
 source('~/Documents/WorkDocuments/Projects/Fundy/makeSeasons.r')
 # MONTHLY SEASONS
-#   ssn_beg=rbind(c(8,1), c(9,1))
-#   ssn_end=rbind(c(8,31),c(9,30))
+   ssn_beg=rbind(c(8,1), c(9,1))
+   ssn_end=rbind(c(8,31),c(9,30))
 # 2-MONTH SEASONS
-ssn_beg=rbind(c(8,1))
-ssn_end=rbind(c(9,30))
+#    ssn_beg=rbind(c(8,1))
+#    ssn_end=rbind(c(9,30))
+# 2-WEEK SEASONS
+    #ssn_beg=rbind(c(8,1), c(8,16), c(9,1), c(9,16))
+    #ssn_end=rbind(c(8,15), c(8,31), c(9,15), c(9,30))
 
 ## 1. import data
 dat <- read_csv(file = "~/Documents/WorkDocuments/Projects/Fundy/Dan & Kelsey All FUNDY data 05-19-2023.CSV", 
@@ -67,7 +70,6 @@ dat$date_jday = format(dat$date_ymd,"%j")
 # keep only desired years and months
 dat <- dat %>%
   filter(YEAR >= begYEAR & YEAR <= endYEAR)
-
 dat <- dat %>%
   filter(MONTH == begMONTH | MONTH == endMONTH)
 
@@ -86,6 +88,8 @@ for (i in 1:length(ssn_beg_date)){
   dat$season[I] = ssn_no[i]
   dat$season_grpd[I] = ssn_no_grpd[i]
 }
+rm(begYEAR, endYEAR, begMONTH, endMONTH)
+rm(ssn_beg, ssn_end, ssn_no_grpd, ssn_beg_date, ssn_end_date)
 
 #I am not sure if we should do this. See user guide. "NUMBER is the number of animals (or vessels, etc.) counted at a sighting.
 #  NUMBER is required for all sightings for all data types, and not allowed for non-sighting
@@ -178,6 +182,7 @@ for (i in 1:length(ufid)) {
     dat$Effort[I] <- sum(dat$pt2pt.effort[I], na.rm = T)
   }
 }
+rm(tmp.dat, i, I, k, numRecs, ufid)
 
 ## REDUCE SIZE OF THE DATASET
 keep.cols <- c("FILEID", "EVENTNO", "YEAR", "MONTH", "DAY", "BEAUFORT", "LEGTYPE", "LEGSTAGE", 
@@ -185,6 +190,4 @@ keep.cols <- c("FILEID", "EVENTNO", "YEAR", "MONTH", "DAY", "BEAUFORT", "LEGTYPE
                "on.off.eff", "pt2pt.effort", "season", "season_grpd")
 tmpdat <- dat %>%
   dplyr::select(all_of(keep.cols)) #%>%
-
-# cleanup before moving to next script
-rm(tmp.dat, i, I, k, numRecs, ufid)
+rm(keep.cols)
