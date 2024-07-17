@@ -86,6 +86,7 @@ for (j in 1:num_spp){
 effort3d = spp3d
 jday3d = spp3d
 bft3d = spp3d
+reps = matrix(data = NA, nrow = num_ssn, ncol = num_cells)
 
 #loop about season
 for (i in 1:num_ssn){ 
@@ -182,12 +183,14 @@ for (i in 1:num_ssn){
   repeatVisits[is.na(repeatVisits)] = 0 #change NA to zero
   repeatVisits[repeatVisits>0] = 1 #change effort>0 to 1
   repeatVisits = rowSums(repeatVisits) #sum number of visits to each site
+  print(repeatVisits)
+  reps[i,] = repeatVisits
   
-  # plot repeat visits to each grid cell within each season
-  plot(repeatVisits,
-       main = paste("Repeats within season ", i, sep = ""),
-       xlab = "grid cell",
-       ylab = "number repeat visits")
+  # # plot repeat visits to each grid cell within each season
+  # plot(repeatVisits,
+  #      main = paste("Repeats within season ", i, sep = ""),
+  #      xlab = "grid cell",
+  #      ylab = "number repeat visits")
   
   # fill 3d effort matrix
   cmd = paste("effort3d[,,", i, "] = as.matrix(st_drop_geometry(effort))", sep = "")

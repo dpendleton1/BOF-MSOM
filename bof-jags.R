@@ -137,9 +137,9 @@ nc <- 3 #initset[1]
 n.adapt <- 1000 #initset[2]
 n.burn <- 1000 #initset[3]
 n.iter <- 4000 #initset[4]
-thin <- 10 #initset[5]
+thin <- 1 #initset[5]
 
-pars <- c("mu.b.0", "mu.a.0", "mu.a.jday", "mu.a.bft", "mu.a.eff", "mu.g.0", "mu.e.0")
+pars <- c("mu.b.0", "mu.a.0", "mu.a.jday", "mu.a.bft", "mu.a.eff", "mu.g.0", "mu.e.0", "Z")
 #pars <- c("Z")
 
 ### Parallelize across chains ##
