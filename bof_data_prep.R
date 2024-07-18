@@ -5,8 +5,8 @@ library(tidyverse)
 
 ## inputs
 #years
-begYEAR = 2005
-endYEAR = 2006
+begYEAR = 2003
+endYEAR = 2003
 
 #months
 begMONTH = 8
