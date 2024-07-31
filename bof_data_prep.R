@@ -5,8 +5,8 @@ library(tidyverse)
 
 ## inputs
 #years
-begYEAR = 2003
-endYEAR = 2003
+begYEAR = 2004
+endYEAR = 2004
 
 #months
 begMONTH = 8
@@ -18,11 +18,11 @@ source('~/Documents/WorkDocuments/Projects/Fundy/makeSeasons.r')
 #   ssn_beg=rbind(c(8,1), c(9,1))
 #   ssn_end=rbind(c(8,31),c(9,30))
 # 2-MONTH SEASONS
-#    ssn_beg=rbind(c(8,1))
-#    ssn_end=rbind(c(9,30))
+    ssn_beg=rbind(c(8,1))
+    ssn_end=rbind(c(9,30))
 # 2-WEEK SEASONS
-    ssn_beg=rbind(c(8,1), c(8,16), c(9,1), c(9,16))
-    ssn_end=rbind(c(8,15), c(8,31), c(9,15), c(9,30))
+#    ssn_beg=rbind(c(8,1), c(8,16), c(9,1), c(9,16))
+#    ssn_end=rbind(c(8,15), c(8,31), c(9,15), c(9,30))
 
 ## 1. import data
 dat <- read_csv(file = "~/Documents/WorkDocuments/Projects/Fundy/Dan & Kelsey All FUNDY data 05-19-2023.CSV", 
@@ -88,8 +88,8 @@ for (i in 1:length(ssn_beg_date)){
   dat$season[I] = ssn_no[i]
   dat$season_grpd[I] = ssn_no_grpd[i]
 }
-rm(begYEAR, endYEAR, begMONTH, endMONTH)
-rm(ssn_beg, ssn_end, ssn_no_grpd, ssn_beg_date, ssn_end_date)
+#rm(begYEAR, endYEAR, begMONTH, endMONTH)
+#rm(ssn_beg, ssn_end, ssn_no_grpd, ssn_beg_date, ssn_end_date)
 
 #I am not sure if we should do this. See user guide. "NUMBER is the number of animals (or vessels, etc.) counted at a sighting.
 #  NUMBER is required for all sightings for all data types, and not allowed for non-sighting
@@ -191,3 +191,4 @@ keep.cols <- c("FILEID", "EVENTNO", "YEAR", "MONTH", "DAY", "BEAUFORT", "LEGTYPE
 tmpdat <- dat %>%
   dplyr::select(all_of(keep.cols)) #%>%
 rm(keep.cols)
+

@@ -290,25 +290,29 @@ for (i in 1:num_ssn){
   rm(tmpdat_sf_season, num_season_ufids)
 }
 
+#save output
+fn1 = paste("realdeal", "_", begYEAR, "_", endYEAR, "_", cell_size, ".RData", sep = "")
+fn2 = paste("save(list = ls(), file = '", fn1, "')", sep = "")
+eval(parse(text = fn2))
+           
+# Plot effort for one survey
+voi = HUWH_ssn1_grid_sf
+col_name = names(voi)[3]
 
-# # Plot effort for one survey
-# i=2
-# voi = effort_list[[i]]
-# col_name = names(voi)[3] #FILEID (could also be date)
-# 
 # tmap_mode("view") #interactive viewing mode, e.g., for web
 # map_fishnet = tm_shape(voi) +
 #   tm_fill(
-#     col = col_name, 
+#     col = col_name,
 #     palette = "Reds",
 #     style = "cont",
-#     title = paste("survey effort (km) ", col_name),
+#     #title = paste("RIWH sightings ", col_name),
+#     title = "test",
 #     id = "grid_id",
 #     showNA = FALSE,
 #     alpha = 0.5,
 #     #popup.vars = c("voi " = col_name),
 #     #popup.format = list(
-#     #  col_name = list(format = "f", digits = 0)
+#     col_name = list(format = "f", digits = 0)
 #     #)
 #   ) +
 #   tm_borders(col = "grey40", lwd = 0.7)

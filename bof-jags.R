@@ -1,7 +1,6 @@
 # bof msom jags model
 
 # first try a single species model
-
 library(R2jags)
 library(rjags)
 library(foreign)
@@ -40,7 +39,6 @@ dets4d <- array(dim = dim(y.array), data = as.vector(dets))
 bft4d <- array(dim = dim(y.array), data = as.vector(bft.st))
 jday4d <- array(dim = dim(y.array), data = as.vector(jday.st))
 eff4d <- array(dim = dim(y.array), data = as.vector(eff.st))
-
 
 ############## JAGS Model & Run #####################
 
@@ -114,7 +112,7 @@ whale.mod <- function() {
         y[j, k, 1, t] ~ dbin(mu.p[j, k, 1, t], 1)
       }
       
-      # Colonization & persistence for seasons 2-4 in each year, using Socolar offset method (deltas) to look at phenological shift
+      # Colonization & persistence for seasons 2-N in each year
       for(l in 2:n.season) {
         
         logit(phi[j, l-1, t]) <- e.0[t]
@@ -122,7 +120,7 @@ whale.mod <- function() {
         psi[j, l, t] <- phi[j, l-1, t]*Z[j, l-1, t] + gamma[j, l-1, t]*(1 - Z[j, l-1, t])
         Z[j, l, t] ~ dbin(psi[j, l, t], 1)
         
-        # Detectability for seasons 2-4 in each year
+        # Detectability for seasons 2-N in each year
         for(k in 1:n.visit) {
           logit(p[j, k, l, t]) <- a.0[t] + a.jday[t] * jday[j, k, l, t] + a.bft[t] * bft[j, k, l, t] + a.eff[t] * eff[j, k, l, t]
           mu.p[j, k, l, t] <- p[j, k, l, t] * Z[j, l, t]
@@ -134,13 +132,19 @@ whale.mod <- function() {
 }
 
 nc <- 3 #initset[1]
-n.adapt <- 1000 #initset[2]
-n.burn <- 1000 #initset[3]
-n.iter <- 4000 #initset[4]
+n.adapt <- 5000 #initset[2]
+n.burn <- 5000 #initset[3]
+n.iter <- 20000 #initset[4]
 thin <- 1 #initset[5]
 
-pars <- c("mu.b.0", "mu.a.0", "mu.a.jday", "mu.a.bft", "mu.a.eff", "mu.g.0", "mu.e.0", "Z")
-#pars <- c("Z")
+parSelect = 'colext'
+#parSelect = 'Z'
+if (parSelect == 'colext') {
+  pars <- c("mu.b.0", "mu.a.0", "mu.a.jday", "mu.a.bft", "mu.a.eff", "mu.g.0", "mu.e.0")
+    } else if (parSelect == 'Z') {
+  pars <- c("Z")  
+}
+
 
 ### Parallelize across chains ##
 start.time<-Sys.time()
@@ -152,8 +156,22 @@ whale.pars <- jags.parfit(cl, jags.data, params = pars, whale.mod, inits=inits, 
                           n.adapt=n.adapt, n.update = n.burn, thin = thin, n.iter = n.iter)
 stopCluster(cl)    # close out the cluster.
 end.time=Sys.time()
-elapsed.time = difftime(end.time, start.time, units='hours')
+elapsed.time = difftime(end.time, start.time, units='mins')
 elapsed.time 
 
-plot(whale.pars)
-summary(whale.pars)
+if (parSelect == 'colext') {
+  whale.pars.colext = whale.pars
+} else if (parSelect == 'Z') {
+  whale.pars.z <- whale.pars
+}
+
+#plot(whale.pars)
+#summary(whale.pars)
+
+# #save whale.pars
+# #setwd(resultsdir)
+# paste("save(list = ls(), file = ", "'", spp, '.', paramset, ".all", ".RData", "')", sep="")
+# fn <- paste(spp, '.', paramset, '.RData', sep="")
+# save(whale.pars, file = fn)
+# #save elapsed.time
+# save(elapsed.time, file = 'elapsedtime.RData')
