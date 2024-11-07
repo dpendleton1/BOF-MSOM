@@ -170,8 +170,9 @@ for (i in 1:num_ssn){
     survey_map = mapview(nereid_tracks, color = "red", lwd = 4, alpha = 1, popup = NULL) +
       mapview(tmpdat_sf_season_survey, color = "blue", cex = 2, alpha = .2, popup = NULL) +
       mapview(area_grid_sf)
-    html_fl = paste0("/Users/dan/Desktop/figs/", unique(tmpdat_sf_season$YEAR), "_ssn", i, "_surv", j, "_", season_ufids[j], ".html")
-    mapshot(survey_map, url = html_fl)
+    survey_map
+    # html_fl = paste0("/Users/dan/Desktop/figs/", unique(tmpdat_sf_season$YEAR), "_ssn", i, "_surv", j, "_", season_ufids[j], ".html")
+    # mapshot(survey_map, url = html_fl)
     #browseURL(html_fl)
     
       intersection <- st_intersection(area_grid_sf, nereid_tracks) %>%
@@ -179,24 +180,6 @@ for (i in 1:num_ssn){
         mutate(total_length_km = as.numeric(total_length)*0.001) %>% #changes length from [m] to <dbl> and converts from meters to kilometers
         group_by(grid_id)
       
-      intersection
-      
-      # #keep only linestrings (i.e. get rid of the points), then summarize across grid_id
-      # intersection <- st_collection_extract(intersection, type = "LINESTRING") %>%
-      #   summarize(total_length = sum(L))
-      
-      #plot a particular section of trackline for debugging, try year = 2000, fileid = p108220 because it has some geometry collections that may be problematic
-      # s = 5
-      # mapview(st_sf(intersection$area_grid[s]), color = "red", lwd = 4, alpha = 1, popup = NULL) +
-      #   mapview(tmpdat_sf_season_survey, color = "blue", cex = 2, alpha = .2, popup = NULL) +
-      #   mapview(area_grid_sf)
-      
-      # #preserve the geometries before dropping them so you can perform the join below
-      # intersection_geom = intersection$area_grid
-      # #drop geometry from intersection so you can join it to area_grid_sf below
-      # intersection_nogeom = st_drop_geometry(intersection)
-      # # join intersected data with the list of grid cells
-
      effort_joined <- area_grid_sf %>% 
         left_join(st_drop_geometry(intersection), by = "grid_id")
      
