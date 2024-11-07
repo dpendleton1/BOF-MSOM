@@ -295,10 +295,10 @@ fn1 = paste("realdeal", "_", begYEAR, "_", endYEAR, "_", cell_size, ".RData", se
 fn2 = paste("save(list = ls(), file = '", fn1, "')", sep = "")
 eval(parse(text = fn2))
            
-# Plot effort for one survey
-voi = HUWH_ssn1_grid_sf
-col_name = names(voi)[3]
-
+# # Plot effort for one survey
+# voi = HUWH_ssn1_grid_sf
+# col_name = names(voi)[3]
+# 
 # tmap_mode("view") #interactive viewing mode, e.g., for web
 # map_fishnet = tm_shape(voi) +
 #   tm_fill(

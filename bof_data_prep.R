@@ -5,8 +5,8 @@ library(tidyverse)
 
 ## inputs
 #years
-begYEAR = 2004
-endYEAR = 2004
+begYEAR = 1987
+endYEAR = 2019
 
 #months
 begMONTH = 8
@@ -15,14 +15,17 @@ endMONTH = 9
 #seasons
 source('~/Documents/WorkDocuments/Projects/Fundy/makeSeasons.r')
 # MONTHLY SEASONS
-#   ssn_beg=rbind(c(8,1), c(9,1))
-#   ssn_end=rbind(c(8,31),c(9,30))
+   #ssn_beg=rbind(c(8,1), c(9,1))
+   #ssn_end=rbind(c(8,31),c(9,30))
 # 2-MONTH SEASONS
     ssn_beg=rbind(c(8,1))
     ssn_end=rbind(c(9,30))
 # 2-WEEK SEASONS
 #    ssn_beg=rbind(c(8,1), c(8,16), c(9,1), c(9,16))
 #    ssn_end=rbind(c(8,15), c(8,31), c(9,15), c(9,30))
+# SEASON FOR TESTING
+    #ssn_beg = rbind(c(8,1), c(8,16))
+    #ssn_end = rbind(c(8,15), c(8,31))
 
 ## 1. import data
 dat <- read_csv(file = "~/Documents/WorkDocuments/Projects/Fundy/Dan & Kelsey All FUNDY data 05-19-2023.CSV", 
@@ -103,12 +106,12 @@ for (i in 1:length(ssn_beg_date)){
 
 #----
 dat <- dat %>%
-  mutate(on.off.eff = if_else((BEAUFORT < 4 & #sea state 0-3
+  mutate(on.off.eff = if_else((BEAUFORT <= 6 & # normally require sea state 0-3, but sea state will be covariate on detection in this model
                                  (
                                    (LEGTYPE == 5 & (LEGSTAGE == 1 | LEGSTAGE == 2 | LEGSTAGE == 5)) | #start, continue, end watch while ship not underway
                                      (LEGTYPE == 6 & (LEGSTAGE == 1 | LEGSTAGE == 2 | LEGSTAGE == 5)) #legtype = 6 indicates ship not underway (listening station)
                                  ) & 
-                                 (VISIBLTY >=2) & #VISIBLTY >=2 indicates visibility of at least 2 nautical miles
+                                 (VISIBLTY >=2 | VISIBLTY == -1) & #pre-2020 changes to NARWC Sightings Database, VISIBLTY >=2 or -1 indicates visibility of at least 2 nautical miles. Negative numbers are no longer used, however this dataset was obtained in 2019 before the change.
                                  (IDREL == 3 | is.na(IDREL)) # if there is a sighting, IDREL must = 3. If no sightings, then IDREL should be NA
   ), 
   1, 0)) %>%
@@ -152,11 +155,7 @@ dat$pt2pt.effort <- NA # initialize column to hold distance values between conse
 dat$Effort <- NA # initialize column to hold total distance, "Effort", for each survey (higher level effort calculation)
 ufid <- unique(dat$FILEID) # unique FILEIDs needed for looping about each survey
 
-## IF DISTANCE BETWEEN POINTS IS >X, THEN WE NEED TO FILL IN USING LINSPACE OR SIMILAR FUNCTION.
-# DON'T KNOW HOW TO DO THIS YET
-
-## sum effort for each survey
-# loop through each FILEID, each LEGNO2 within each FILEID
+## sum effort for each survey ## THIS WON'T WORK FOR EARLY DATA. DO NOT USE. SUM WITH LINESTRINGS LATER.
 for (i in 1:length(ufid)) {
   # for each FILEID ...
   I <- which(dat$FILEID == ufid[i]) # get indices for dat$FILEID[i]
@@ -168,7 +167,7 @@ for (i in 1:length(ufid)) {
         tmp.dat$on.off.eff[k + 1] == 1) {
       # if on-effort at two consecutive records
       # apply distance function to calculate distance between on-effort records
-      
+
       # calculated distance and store in every record for this fileid in the original dataset
       dat$pt2pt.effort[I[k]] <-
         fn.grcirclkm(
@@ -186,9 +185,11 @@ rm(tmp.dat, i, I, k, numRecs, ufid)
 
 ## REDUCE SIZE OF THE DATASET
 keep.cols <- c("FILEID", "EVENTNO", "YEAR", "MONTH", "DAY", "BEAUFORT", "LEGTYPE", "LEGSTAGE", 
-               "LATITUDE", "LONGITUDE", "SPECCODE", "NUMBER", "date_ymd", "date_jday", 
+               "LATITUDE", "LONGITUDE", "SPECCODE", "IDREL", "NUMBER", "date_ymd", "date_jday", 
                "on.off.eff", "pt2pt.effort", "season", "season_grpd")
 tmpdat <- dat %>%
   dplyr::select(all_of(keep.cols)) #%>%
 rm(keep.cols)
 
+#write.csv(dat, file = "dat_with_dist.csv")
+#write.csv(tmpdat, file = "tmpdat.csv")
