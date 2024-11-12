@@ -106,7 +106,6 @@ for (j in 1:num_spp){
 
 # 3d matrices for effort and jday, and others
 effort3d_linestring = spp3d #effort from linestrings
-#effort3d = spp3d #effort from pt2pt values
 jday3d = spp3d 
 bft3d = spp3d 
 reps = matrix(data = NA, nrow = num_ssn, ncol = num_cells) #store number visits to each cell
@@ -128,14 +127,12 @@ for (i in 1:num_ssn){
   
   # initialize temporary spatial arrays needed for intersecting within the loop about surveys/ufids
   effort_linestring = area_grid_sf
-  #effort = area_grid_sf 
   jday = area_grid_sf
   bft = area_grid_sf
   
   #fill out columns to the maximum number of surveys
   #add two columns at the beginning to accommodate geometry and grid_id columns
   effort_linestring[,3:(max_survs+2)] = NA
-  #effort[,3:(max_survs+2)] = NA
   jday[,3:(max_survs+2)] = NA  
   bft[,3:(max_survs+2)] = NA
   
@@ -193,19 +190,6 @@ for (i in 1:num_ssn){
     #for example, Year = 2000, FILEID = p10023 does not go into the conservation area. Nereid went out but turned around near North Head.
     ###################################
 
-    ## no longer need to calculate effort the old way    
-    #calculate effort using point2point method
-    #loop about grid cells to populate effort variable
-    # for (k in 1:num_cells){
-    #   # sum pt2pt.effort for each grid cell. loop about each grid cell / polygon
-    #   eff_calc = sum(tmpdat_sf_season_survey$pt2pt.effort[tmpdat_sf_season_survey_grid[[k]]], na.rm = T)
-    #   if (eff_calc == 0){
-    #     effort[k,j+2] = NA
-    #   } else {
-    #     effort[k,j+2] = eff_calc
-    #   }
-    # }
-    
     # fill jday array. no need to loop about grid cells:
     #   jday should be the same for all grid cells within a survey, so fill all rows with jday value and NA-out grid cells not surveyed below
     if (length(unique(tmpdat_sf_season_survey$date_jday)) == 1){
@@ -225,13 +209,11 @@ for (i in 1:num_ssn){
   
   #name columns
   names(effort_linestring)[3:(num_season_ufids+2)] = season_ufids
-  names(effort)[3:(num_season_ufids+2)] = season_ufids
   names(jday)[3:(num_season_ufids+2)] = season_ufids
   names(bft)[3:(num_season_ufids+2)] = season_ufids
   
   # NA-out cells with no effort within jday, bft, other matricies
   # then get indices, then ask jday matrix (includes geom) to NA-out row/col elements where the non-geom effort matrix has NAs. That NA's out the correct spots in jday matrix.
-  #effort_drop = st_drop_geometry(effort) # remove geom from effort
   effort_drop = st_drop_geometry(effort_linestring) # remove geom from effort
   effort_drop_NA = which(is.na(effort_drop), arr.ind = T) # get row and column indices where effort matrix = NA
   effort_drop_NA[,2] = effort_drop_NA[,2]+1 # advance the column by one, to correct for the geom column present in matrices
@@ -241,7 +223,7 @@ for (i in 1:num_ssn){
   rm(effort_drop, effort_drop_NA) #do not delete effort_drop_NA_list[[]], as it is needed to NA-out cells in spp arrays below
   
   ## now we would like to know, for each site, how many repeat visits do we have within the season?
-  repeatVisits = st_drop_geometry(effort) #drop geom
+  repeatVisits = st_drop_geometry(effort_linestring) #drop geom
   repeatVisits = repeatVisits[,-1] #remove first column (grid_id)
   repeatVisits[is.na(repeatVisits)] = 0 #change NA to zero
   repeatVisits[repeatVisits>0] = 1 #change effort>0 to 1
@@ -253,11 +235,6 @@ for (i in 1:num_ssn){
   cmd = paste("effort3d_linestring[,,", i, "] = as.matrix(st_drop_geometry(effort_linestring))", sep = "")
   print(cmd)
   eval(parse(text = cmd))
-  
-  # # fill 3d effort matrix
-  # cmd = paste("effort3d[,,", i, "] = as.matrix(st_drop_geometry(effort))", sep = "")
-  # print(cmd)
-  # eval(parse(text = cmd))
   
   # fill 3d jday matrix
   cmd = paste("jday3d[,,", i, "] = as.matrix(st_drop_geometry(jday))", sep = "")
@@ -272,12 +249,10 @@ for (i in 1:num_ssn){
   ### # optional: produce lists for each detection variable
   # # spatialize effort_list and jday_list, for uyear[i]
   effort_linestring_list[[i]] = area_grid_sf
-  #effort_list[[i]] = area_grid_sf 
   jday_list[[i]] = area_grid_sf
   bft_list[[i]] = area_grid_sf
   
   effort_linestring_list[[i]] = effort_linestring
-  #effort_list[[i]] = effort  
   jday_list[[i]] = jday
   bft_list[[i]] = bft
   ###
