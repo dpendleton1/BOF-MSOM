@@ -78,7 +78,7 @@ print(max_survs)
 # each season will be one element of effort_list, jday_list, and so on
 effort_drop_NA_list = vector("list", num_ssn) #list to hold positions of NA (needed for NA-ing out values in other matrices)
 effort_linestring_list = vector("list", num_ssn) #holds effort for each survey and cell, computed using linestrings
-effort_list = vector("list", num_ssn) #holds effort for each survey and cell, computed using pt2pt distances
+#effort_list = vector("list", num_ssn) #holds effort for each survey and cell, computed using pt2pt distances
 jday_list = vector("list", num_ssn) #holds jday for each survey and cell
 bft_list = vector("list", num_ssn) #holds beafort sea state for each survey and cell
 
@@ -106,7 +106,7 @@ for (j in 1:num_spp){
 
 # 3d matrices for effort and jday, and others
 effort3d_linestring = spp3d #effort from linestrings
-effort3d = spp3d #effort from pt2pt values
+#effort3d = spp3d #effort from pt2pt values
 jday3d = spp3d 
 bft3d = spp3d 
 reps = matrix(data = NA, nrow = num_ssn, ncol = num_cells) #store number visits to each cell
@@ -128,14 +128,14 @@ for (i in 1:num_ssn){
   
   # initialize temporary spatial arrays needed for intersecting within the loop about surveys/ufids
   effort_linestring = area_grid_sf
-  effort = area_grid_sf 
+  #effort = area_grid_sf 
   jday = area_grid_sf
   bft = area_grid_sf
   
   #fill out columns to the maximum number of surveys
   #add two columns at the beginning to accommodate geometry and grid_id columns
   effort_linestring[,3:(max_survs+2)] = NA
-  effort[,3:(max_survs+2)] = NA
+  #effort[,3:(max_survs+2)] = NA
   jday[,3:(max_survs+2)] = NA  
   bft[,3:(max_survs+2)] = NA
   
@@ -192,18 +192,19 @@ for (i in 1:num_ssn){
     #in this case, we should delete that column from the output. This is probably best done at the end.
     #for example, Year = 2000, FILEID = p10023 does not go into the conservation area. Nereid went out but turned around near North Head.
     ###################################
-    
+
+    ## no longer need to calculate effort the old way    
     #calculate effort using point2point method
     #loop about grid cells to populate effort variable
-    for (k in 1:num_cells){
-      # sum pt2pt.effort for each grid cell. loop about each grid cell / polygon
-      eff_calc = sum(tmpdat_sf_season_survey$pt2pt.effort[tmpdat_sf_season_survey_grid[[k]]], na.rm = T)
-      if (eff_calc == 0){
-        effort[k,j+2] = NA
-      } else {
-        effort[k,j+2] = eff_calc
-      }
-    }
+    # for (k in 1:num_cells){
+    #   # sum pt2pt.effort for each grid cell. loop about each grid cell / polygon
+    #   eff_calc = sum(tmpdat_sf_season_survey$pt2pt.effort[tmpdat_sf_season_survey_grid[[k]]], na.rm = T)
+    #   if (eff_calc == 0){
+    #     effort[k,j+2] = NA
+    #   } else {
+    #     effort[k,j+2] = eff_calc
+    #   }
+    # }
     
     # fill jday array. no need to loop about grid cells:
     #   jday should be the same for all grid cells within a survey, so fill all rows with jday value and NA-out grid cells not surveyed below
@@ -230,7 +231,8 @@ for (i in 1:num_ssn){
   
   # NA-out cells with no effort within jday, bft, other matricies
   # then get indices, then ask jday matrix (includes geom) to NA-out row/col elements where the non-geom effort matrix has NAs. That NA's out the correct spots in jday matrix.
-  effort_drop = st_drop_geometry(effort) # remove geom from effort
+  #effort_drop = st_drop_geometry(effort) # remove geom from effort
+  effort_drop = st_drop_geometry(effort_linestring) # remove geom from effort
   effort_drop_NA = which(is.na(effort_drop), arr.ind = T) # get row and column indices where effort matrix = NA
   effort_drop_NA[,2] = effort_drop_NA[,2]+1 # advance the column by one, to correct for the geom column present in matrices
   effort_drop_NA_list[[i]] = effort_drop_NA # insert into a list object. do not delete - needed in spp section
@@ -247,21 +249,15 @@ for (i in 1:num_ssn){
   print(repeatVisits)
   reps[i,] = repeatVisits
   
-  # # plot repeat visits to each grid cell within each season
-  # plot(repeatVisits,
-  #      main = paste("Repeats within season ", i, sep = ""),
-  #      xlab = "grid cell",
-  #      ylab = "number repeat visits")
-  
   # fill 3d effort_linestring matrix
   cmd = paste("effort3d_linestring[,,", i, "] = as.matrix(st_drop_geometry(effort_linestring))", sep = "")
   print(cmd)
   eval(parse(text = cmd))
   
-  # fill 3d effort matrix
-  cmd = paste("effort3d[,,", i, "] = as.matrix(st_drop_geometry(effort))", sep = "")
-  print(cmd)
-  eval(parse(text = cmd))
+  # # fill 3d effort matrix
+  # cmd = paste("effort3d[,,", i, "] = as.matrix(st_drop_geometry(effort))", sep = "")
+  # print(cmd)
+  # eval(parse(text = cmd))
   
   # fill 3d jday matrix
   cmd = paste("jday3d[,,", i, "] = as.matrix(st_drop_geometry(jday))", sep = "")
@@ -276,19 +272,19 @@ for (i in 1:num_ssn){
   ### # optional: produce lists for each detection variable
   # # spatialize effort_list and jday_list, for uyear[i]
   effort_linestring_list[[i]] = area_grid_sf
-  effort_list[[i]] = area_grid_sf 
+  #effort_list[[i]] = area_grid_sf 
   jday_list[[i]] = area_grid_sf
   bft_list[[i]] = area_grid_sf
   
   effort_linestring_list[[i]] = effort_linestring
-  effort_list[[i]] = effort  
+  #effort_list[[i]] = effort  
   jday_list[[i]] = jday
   bft_list[[i]] = bft
   ###
   
-  rm(effort, effort_linestring, jday, bft)
+  rm(effort_linestring, jday, bft)
   
-  # loop abotu species
+  # loop about species
   for (j in 1:num_spp){
     print(spp[j])
     
@@ -297,6 +293,11 @@ for (i in 1:num_ssn){
     cmd = paste(spp[j], "_season = tmpdat_sf_season |> filter(SPECCODE == '", spp[j], "')", sep = "")
     print(cmd)
     eval(parse(text = cmd))
+    
+    ### ** 
+    #IF YOU SAVE RIWH_season (immediately above) you will have the points you need to plot for sighting locations.
+    #The points below (in RIWH_ssn1_grid_sf) are polygons and not points, so that wouldn't work.
+    ### ** 
     
     # grid for spp[j]
     # initialize sf object with grid cells for each species, by copying area_grid_sf

@@ -6,7 +6,7 @@ library(tidyverse)
 ## inputs
 #years
 begYEAR = 1987
-endYEAR = 2019
+endYEAR = 1987
 
 #months
 begMONTH = 8
@@ -120,73 +120,81 @@ dat <- dat %>%
   )
 
 
-# compute point2point effort for each survey
-# source function
-fn.grcirclkm <- function(lat1,lon1,lat2,lon2) {
-  R <- pi/180      #angle in radians = angle in degrees * R
-  D <- 180/pi      #angle in degrees = angle in radains * D
-  dist <- 0
-  
-  NAcheck <- sum(is.na(c(lat1,lon1,lat2,lon2)))
-  if (NAcheck==0) {             #only continue if no NA positions
-    if ((lat1!=lat2) | (lon1!=lon2))  {
-      dlat1 <- lat1 * R              # convert to radian values:
-      dlng1 <- lon1 * R
-      dlat2 <- lat2 * R
-      dlng2 <- lon2 * R
-      las <- sin(dlat1) * sin(dlat2);   # compute distance
-      lac <- cos(dlat1) * cos(dlat2) * cos(dlng1 - dlng2)
-      laf <- las + lac
-      if (laf < -1) {
-        laf <- -1
-        dacos <- (pi/2) - atan(laf/sqrt(1-(laf*laf)))
-      } else if (laf < 1) {
-        dacos <- (pi/2) - atan(laf/sqrt(1-(laf*laf)));
-      } else {
-        error ('laf value out of bounds')
-      }
-      dist <- (dacos * D * 60) * 1.852           #calculate distance in km
-    }
-  }
-  dist <- dist
-}
-
-dat$pt2pt.effort <- NA # initialize column to hold distance values between consecutive points
-dat$Effort <- NA # initialize column to hold total distance, "Effort", for each survey (higher level effort calculation)
-ufid <- unique(dat$FILEID) # unique FILEIDs needed for looping about each survey
-
-## sum effort for each survey ## THIS WON'T WORK FOR EARLY DATA. DO NOT USE. SUM WITH LINESTRINGS LATER.
-for (i in 1:length(ufid)) {
-  # for each FILEID ...
-  I <- which(dat$FILEID == ufid[i]) # get indices for dat$FILEID[i]
-  tmp.dat <- dat[I,] # temporary dataset for only this FILEID
-  numRecs <- nrow(tmp.dat) - 1 # count number of records in this temporary dataset
-  for (k in 1:numRecs) {
-    # for each record in this FILEID
-    if (tmp.dat$on.off.eff[k] == 1 &
-        tmp.dat$on.off.eff[k + 1] == 1) {
-      # if on-effort at two consecutive records
-      # apply distance function to calculate distance between on-effort records
-
-      # calculated distance and store in every record for this fileid in the original dataset
-      dat$pt2pt.effort[I[k]] <-
-        fn.grcirclkm(
-          tmp.dat$LATITUDE[k],
-          tmp.dat$LONGITUDE[k],
-          tmp.dat$LATITUDE[k + 1],
-          tmp.dat$LONGITUDE[k + 1]
-        )
-    }
-    # store effort value (same for each record of each survey)
-    dat$Effort[I] <- sum(dat$pt2pt.effort[I], na.rm = T)
-  }
-}
-rm(tmp.dat, i, I, k, numRecs, ufid)
+# # compute point2point effort for each survey
+# # source function
+# fn.grcirclkm <- function(lat1,lon1,lat2,lon2) {
+#   R <- pi/180      #angle in radians = angle in degrees * R
+#   D <- 180/pi      #angle in degrees = angle in radains * D
+#   dist <- 0
+#   
+#   NAcheck <- sum(is.na(c(lat1,lon1,lat2,lon2)))
+#   if (NAcheck==0) {             #only continue if no NA positions
+#     if ((lat1!=lat2) | (lon1!=lon2))  {
+#       dlat1 <- lat1 * R              # convert to radian values:
+#       dlng1 <- lon1 * R
+#       dlat2 <- lat2 * R
+#       dlng2 <- lon2 * R
+#       las <- sin(dlat1) * sin(dlat2);   # compute distance
+#       lac <- cos(dlat1) * cos(dlat2) * cos(dlng1 - dlng2)
+#       laf <- las + lac
+#       if (laf < -1) {
+#         laf <- -1
+#         dacos <- (pi/2) - atan(laf/sqrt(1-(laf*laf)))
+#       } else if (laf < 1) {
+#         dacos <- (pi/2) - atan(laf/sqrt(1-(laf*laf)));
+#       } else {
+#         error ('laf value out of bounds')
+#       }
+#       dist <- (dacos * D * 60) * 1.852           #calculate distance in km
+#     }
+#   }
+#   dist <- dist
+# }
+# 
+# dat$pt2pt.effort <- NA # initialize column to hold distance values between consecutive points
+# dat$Effort <- NA # initialize column to hold total distance, "Effort", for each survey (higher level effort calculation)
+# ufid <- unique(dat$FILEID) # unique FILEIDs needed for looping about each survey
+# 
+# ## sum effort for each survey ## THIS WON'T WORK FOR EARLY DATA. DO NOT USE. SUM WITH LINESTRINGS LATER.
+# # for (i in 1:length(ufid)) {
+# #   # for each FILEID ...
+# #   I <- which(dat$FILEID == ufid[i]) # get indices for dat$FILEID[i]
+# #   tmp.dat <- dat[I,] # temporary dataset for only this FILEID
+# #   numRecs <- nrow(tmp.dat) - 1 # count number of records in this temporary dataset
+# #   for (k in 1:numRecs) {
+# #     # for each record in this FILEID
+# #     if (tmp.dat$on.off.eff[k] == 1 &
+# #         tmp.dat$on.off.eff[k + 1] == 1) {
+# #       # if on-effort at two consecutive records
+# #       # apply distance function to calculate distance between on-effort records
+# # 
+# #       # calculated distance and store in every record for this fileid in the original dataset
+# #       dat$pt2pt.effort[I[k]] <-
+# #         fn.grcirclkm(
+# #           tmp.dat$LATITUDE[k],
+# #           tmp.dat$LONGITUDE[k],
+# #           tmp.dat$LATITUDE[k + 1],
+# #           tmp.dat$LONGITUDE[k + 1]
+# #         )
+# #     }
+# #     # store effort value (same for each record of each survey)
+# #     dat$Effort[I] <- sum(dat$pt2pt.effort[I], na.rm = T)
+# #   }
+# # }
+# # rm(tmp.dat, i, I, k, numRecs, ufid)
 
 ## REDUCE SIZE OF THE DATASET
-keep.cols <- c("FILEID", "EVENTNO", "YEAR", "MONTH", "DAY", "BEAUFORT", "LEGTYPE", "LEGSTAGE", 
-               "LATITUDE", "LONGITUDE", "SPECCODE", "IDREL", "NUMBER", "date_ymd", "date_jday", 
-               "on.off.eff", "pt2pt.effort", "season", "season_grpd")
+keep.cols <- c("FILEID", 
+               "EVENTNO", 
+               "YEAR", "MONTH", "DAY", 
+               "BEAUFORT", 
+               "LEGTYPE", "LEGSTAGE", 
+               "LATITUDE", "LONGITUDE", 
+               "SPECCODE", "IDREL", "NUMBER", 
+               "date_ymd", "date_jday", 
+               "on.off.eff", 
+               #"pt2pt.effort", 
+               "season", "season_grpd")
 tmpdat <- dat %>%
   dplyr::select(all_of(keep.cols)) #%>%
 rm(keep.cols)
