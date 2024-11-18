@@ -18,8 +18,8 @@ source('~/Documents/WorkDocuments/Projects/Fundy/makeSeasons.r')
    #ssn_beg=rbind(c(8,1), c(9,1))
    #ssn_end=rbind(c(8,31),c(9,30))
 # 2-MONTH SEASONS
-    ssn_beg=rbind(c(8,1))
-    ssn_end=rbind(c(9,30))
+  ssn_beg=rbind(c(8,1))
+  ssn_end=rbind(c(9,30))
 # 2-WEEK SEASONS
 #    ssn_beg=rbind(c(8,1), c(8,16), c(9,1), c(9,16))
 #    ssn_end=rbind(c(8,15), c(8,31), c(9,15), c(9,30))
