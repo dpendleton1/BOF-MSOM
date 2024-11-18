@@ -1,6 +1,4 @@
 #BOF DATA PREP
-
-
 library(tidyverse)
 
 ## 0. run bof_param_specification.R
@@ -72,16 +70,6 @@ for (i in 1:length(ssn_beg_date)){
 #rm(begYEAR, endYEAR, begMONTH, endMONTH)
 #rm(ssn_beg, ssn_end, ssn_no_grpd, ssn_beg_date, ssn_end_date)
 
-#I am not sure if we should do this. See user guide. "NUMBER is the number of animals (or vessels, etc.) counted at a sighting.
-#  NUMBER is required for all sightings for all data types, and not allowed for non-sighting
-#  records. If the number of animals is not known (or for many pollution/human activity 
-#  sightings where a number is neither logical nor practical), the field may be left blank,
-#  however in those cases the value for CONFIDNC must be “11.” For field efforts where
-#  counts are collected in a high/low/best format, it would be “best” that would be put in here."
-#find rows where there dat$number is NA, and dat$SPECCODE is not empty
-# dat <- dat %>%
-#   mutate(number = if_else(condition = is.na(number) & SPECCODE != "" , 1, number))
-
 #----
 dat <- dat %>%
   mutate(on.off.eff = if_else((BEAUFORT <= 6 & # normally require sea state 0-3, but sea state will be covariate on detection in this model
@@ -107,7 +95,6 @@ keep.cols <- c("FILEID",
                "SPECCODE", "IDREL", "NUMBER", 
                "date_ymd", "date_jday", 
                "on.off.eff", 
-               #"pt2pt.effort", 
                "season", "season_grpd")
 tmpdat <- dat %>%
   dplyr::select(all_of(keep.cols)) #%>%
