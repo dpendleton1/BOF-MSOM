@@ -1,6 +1,7 @@
 # bof_specify_parmams.r
 # specify parameters for bof_data_prep and bof_real_deal_xxx codes
 
+setwd("~/BOF-MSOM/")
 rm(list = ls())
 
 ## inputs
@@ -13,7 +14,8 @@ begMONTH = 8
 endMONTH = 9
 
 #seasons
-source('~/Documents/WorkDocuments/Projects/Fundy/makeSeasons.r')
+#source('~/Documents/WorkDocuments/Projects/Fundy/makeSeasons.R')
+source('makeSeasons.R')
 # MONTHLY SEASONS
     ssn_beg=rbind(c(8,1), c(9,1))
     ssn_end=rbind(c(8,31),c(9,30))
@@ -27,5 +29,6 @@ source('~/Documents/WorkDocuments/Projects/Fundy/makeSeasons.r')
 #ssn_beg = rbind(c(8,1), c(8,16))
 #ssn_end = rbind(c(8,15), c(8,31))
 
-file_loc = "~/Documents/WorkDocuments/Projects/Fundy/Dan & Kelsey All FUNDY data 05-19-2023.CSV"
+file_loc = "data/Dan & Kelsey All FUNDY data 05-19-2023.CSV"
+#file_loc = "~/Documents/WorkDocuments/Projects/Fundy/Dan & Kelsey All FUNDY data 05-19-2023.CSV"
 
