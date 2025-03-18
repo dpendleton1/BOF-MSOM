@@ -165,20 +165,19 @@ for (i in 1:num_ssn){
     nereid_tracks = st_sf(nereid_tracks)
     class(nereid_tracks)
 
-    if (j == 1){ #plot and save only one map (to save space)
+    #plot and save only one map (to save space)
+    if (j == 1){ 
       #create the survey map
       survey_map = mapview(nereid_tracks, color = "red", lwd = 4, alpha = 1, popup = NULL) +
         mapview(tmpdat_sf_season_survey, color = "blue", cex = 2, alpha = .2, popup = NULL) +
         mapview(area_grid_sf)
-      #plot the survey map
-      survey_map 
-      #write map as html file
-      #html_fl = paste0("/Users/dan/Desktop/figures/", unique(tmpdat_sf_season$YEAR), "_ssn", i, "_surv", j, "_", season_ufids[j], ".html")
+      survey_map  #plot the survey map
+      
+      #write and view map as html file
       html_fl = paste0(curr_dir, "/figs/", unique(tmpdat_sf_season$YEAR), "_ssn", i, "_surv", j, "_", season_ufids[j], ".html")
-      #save the map 
-      mapshot(survey_map, url = html_fl)
-      #open the map in a web browser
-      # browseURL(html_fl) 
+      mapshot(survey_map, url = html_fl) #save the map 
+      #browseURL(html_fl) #open the map in a web browser
+      
     }
     
     #intersect grid with survey trackline (linestring), calculate and store trackline length in each grid cell
