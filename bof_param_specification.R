@@ -1,8 +1,11 @@
 # bof_specify_parmams.r
 # specify parameters for bof_data_prep and bof_real_deal_xxx codes
 
-setwd("~/BOF-MSOM/")
 rm(list = ls())
+
+#find current directory, setwd to current directory
+curr_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+setwd(curr_dir)
 
 ## inputs
 #years
