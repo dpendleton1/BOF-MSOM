@@ -9,8 +9,8 @@ setwd(curr_dir)
 
 ## inputs
 #years
-begYEAR = 1989
-endYEAR = 1989
+begYEAR = 1988
+endYEAR = 1988
 
 #months
 begMONTH = 8

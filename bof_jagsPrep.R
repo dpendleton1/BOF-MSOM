@@ -166,7 +166,7 @@ for (i in 1:num_ssn){
     class(nereid_tracks)
 
     #plot and save only one map (to save space)
-    if (j == 1){ 
+    #if (j == 1){ 
       #create the survey map
       survey_map = mapview(nereid_tracks, color = "red", lwd = 4, alpha = 1, popup = NULL) +
         mapview(tmpdat_sf_season_survey, color = "blue", cex = 2, alpha = .2, popup = NULL) +
@@ -178,7 +178,7 @@ for (i in 1:num_ssn){
       mapshot(survey_map, url = html_fl) #save the map 
       #browseURL(html_fl) #open the map in a web browser
       
-    }
+    #}
     
     #intersect grid with survey trackline (linestring), calculate and store trackline length in each grid cell
       intersection <- st_intersection(area_grid_sf, nereid_tracks) %>%
