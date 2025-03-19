@@ -1,6 +1,14 @@
 #BOF DATA PREP
 library(tidyverse)
 
+install.packages("googledrive")
+library("googledrive")
+setwd(paste0(curr_dir, "/data/"))
+drive_download("Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV")
+#system("rm 'Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV'")
+setwd(curr_dir)
+
+
 ## 0. run bof_param_specification.R
 
 ## 1. import data

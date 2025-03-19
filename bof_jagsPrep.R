@@ -362,3 +362,5 @@ which(colSums(effort3d_linestring, na.rm = T)==0) #save this output and assign f
 
 
 
+
+
