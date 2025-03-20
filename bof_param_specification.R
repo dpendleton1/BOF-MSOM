@@ -32,6 +32,5 @@ source('makeSeasons.R')
 #ssn_beg = rbind(c(8,1), c(8,16))
 #ssn_end = rbind(c(8,15), c(8,31))
 
-file_loc = "data/Dan & Kelsey All FUNDY data 05-19-2023.CSV"
 #file_loc = "~/Documents/WorkDocuments/Projects/Fundy/Dan & Kelsey All FUNDY data 05-19-2023.CSV"
 

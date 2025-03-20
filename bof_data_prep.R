@@ -7,8 +7,7 @@ setwd(paste0(curr_dir, "/data/"))
 drive_download("Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV")
 #system("rm 'Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV'")
 setwd(curr_dir)
-
-#test change
+file_loc = paste0(curr_dir, "/data/", "Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV")
 
 ## 0. run bof_param_specification.R
 
