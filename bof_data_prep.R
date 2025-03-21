@@ -1,13 +1,23 @@
 #BOF DATA PREP
 library(tidyverse)
 
-install.packages("googledrive")
-library("googledrive")
-setwd(paste0(curr_dir, "/data/"))
-drive_download("Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV")
-#system("rm 'Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV'")
-setwd(curr_dir)
+# if necessary, download the data
 file_loc = paste0(curr_dir, "/data/", "Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV")
+if (!file.exists(file_loc)){ #if file already exists, this statement will not be 
+  
+  is_googledrive_available <- require("googledrive") #logial variable indicating if the package is installed
+  
+  # install googledrive if necessary
+  if (is_googledrive_available == FALSE){
+    install.packages("googledrive")
+  }
+
+  #download the file
+  library("googledrive")
+  setwd(paste0(curr_dir, "/data/"))
+  drive_download("Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV")
+  setwd(curr_dir)  
+}
 
 ## 0. run bof_param_specification.R
 
