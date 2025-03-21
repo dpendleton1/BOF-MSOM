@@ -39,6 +39,29 @@ in_pts <- st_intersects(area_grid, polygon_sfc, sparse = FALSE) #find cells insi
 area_grid <- area_grid[in_pts] #reduce to list of cells only inside of polygon
 rm(in_pts, polygon_sfc, polygon_matrix)
 
+## remove surveys that did not go into the grid defined above
+# create one polygon from grid cells. this simplifies evaluation of whether or not there was effort in any of the grid cells
+union_area_grid <- st_union(area_grid)
+
+# create vessel tracks for each FILEID
+tracks <- tmpdat_sf %>% 
+  group_by(FILEID) %>% # this is not necessary since you are working with a tmpdat file that only has one FILEID
+  arrange(FILEID, EVENTNO) %>% # put it in order
+  summarise(do_union = FALSE) %>%  #if you don't do this, it returns one row for each row of tmpdat_sf (your original thing)
+  #st_geometry() #%>% 
+  st_cast("LINESTRING")
+
+# create logical array identifying FILEIDs that do/don't have effort within the unionized polygon
+# specify 'sparse = FALSE' to return a logical array
+intersection <- st_intersects(union_area_grid, tracks, sparse = FALSE)
+# list of FILEIDs that intersect the unionized polygon
+IN_fileids = tracks$FILEID[intersection]
+rm(intersection)
+
+# make new dataset that contains only FILEIDs
+tmpdat_sf <- tmpdat_sf %>%
+  filter(FILEID %in% IN_fileids)
+
 # To sf and add grid ID
 #area_grid_sf = vector("list", num_fids) #DELETE??
 area_grid_sf = st_sf(area_grid)
@@ -166,18 +189,18 @@ for (i in 1:num_ssn){
     class(nereid_tracks)
 
     #plot and save only one map (to save space)
-    #if (j == 1){ 
+    #if (j == 1){
       #create the survey map
       survey_map = mapview(nereid_tracks, color = "red", lwd = 4, alpha = 1, popup = NULL) +
         mapview(tmpdat_sf_season_survey, color = "blue", cex = 2, alpha = .2, popup = NULL) +
         mapview(area_grid_sf)
       survey_map  #plot the survey map
-      
+
       #write and view map as html file
       html_fl = paste0(curr_dir, "/figs/", unique(tmpdat_sf_season$YEAR), "_ssn", i, "_surv", j, "_", season_ufids[j], ".html")
-      mapshot(survey_map, url = html_fl) #save the map 
+      mapshot(survey_map, url = html_fl) #save the map
       #browseURL(html_fl) #open the map in a web browser
-      
+
     #}
     
     #intersect grid with survey trackline (linestring), calculate and store trackline length in each grid cell
@@ -185,6 +208,8 @@ for (i in 1:num_ssn){
         mutate(total_length = st_length(.)) %>%
         mutate(total_length_km = as.numeric(total_length)*0.001) %>% #changes length from [m] to <dbl> and converts from meters to kilometers
         group_by(grid_id)
+      
+    print(sum(intersection$total_length))
     
     #join the 'intersection' just created with grid_id. this creates a matrix with the same order as all the others (e.g. 'effort_linestring').
     #below, we add lengths from effort_joined into effort_linestring
@@ -192,20 +217,10 @@ for (i in 1:num_ssn){
      effort_joined <- area_grid_sf %>% 
         left_join(st_drop_geometry(intersection), by = "grid_id")
      
-    # if (sum(effort_joined$total_length, na.rm = T)){
-    #   next
-    # }
-     
      # store effort length from each grid cell into the column for survey j
     effort_linestring[, j+2] = effort_joined$total_length_km
     rm(effort_joined, intersection)
     
-    ###################################
-    #it's possible that there are surveys that do no enter any of your polygons. this will result in a column for the survey, but NA for all entries.
-    #in this case, we should delete that column from the output. This is probably best done at the end.
-    #for example, Year = 2000, FILEID = p10023 does not go into the conservation area. Nereid went out but turned around near North Head.
-    ###################################
-
     # fill jday array. no need to loop about grid cells:
     #   jday should be the same for all grid cells within a survey, so fill all rows with jday value and NA-out grid cells not surveyed below
     if (length(unique(tmpdat_sf_season_survey$date_jday)) == 1){
@@ -352,13 +367,6 @@ for (i in 1:num_ssn){
   
   rm(tmpdat_sf_season, num_season_ufids)
 }
-
-# get rid of columns with zero effort
-# sum colums to find those with zero effort
-which(colSums(effort3d_linestring, na.rm = T)==0) #save this output and assign fileid to it
-# from left to right, "slide" arrays leftward
-#asdf
-# 
 
 
 
