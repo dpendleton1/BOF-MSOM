@@ -368,6 +368,7 @@ for (i in 1:num_ssn){
   rm(tmpdat_sf_season, num_season_ufids)
 }
 
+#system("rm 'Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV'")
 
 
 
