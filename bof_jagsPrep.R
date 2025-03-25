@@ -53,10 +53,9 @@ tracks <- tmpdat_sf %>%
 
 # create logical array identifying FILEIDs that do/don't have effort within the unionized polygon
 # specify 'sparse = FALSE' to return a logical array
-intersection <- st_intersects(union_area_grid, tracks, sparse = FALSE)
+tracks$intersection <- st_intersects(union_area_grid, tracks, sparse = FALSE)[1,]
 # list of FILEIDs that intersect the unionized polygon
-IN_fileids = tracks$FILEID[intersection]
-rm(intersection)
+IN_fileids = tracks$FILEID[tracks$intersection]
 
 # make new dataset that contains only FILEIDs
 tmpdat_sf <- tmpdat_sf %>%
