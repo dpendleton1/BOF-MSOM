@@ -10,7 +10,7 @@ setwd(curr_dir)
 ## inputs
 #years
 begYEAR = 1988
-endYEAR = 1995
+endYEAR = 2020
 
 #months
 begMONTH = 8
