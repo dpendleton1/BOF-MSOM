@@ -1,0 +1,212 @@
+---
+title: "BOF"
+author: "DEP"
+format: html
+editor: visual
+---
+
+### Load all libraries
+```{r}
+library(tidyverse)
+library(sf)
+library(dplyr)
+library(webshot) #needed to save maps. on new systems, may have to do: webshot::install_phantomjs()
+library(mapview) 
+library(tmap)
+library(R2jags)
+library(rjags)
+library(foreign)
+library(dclone) # built-in functionality for parallel MCMC with jags via jags.parfit()
+library(viridis)
+library(fields)
+```
+
+
+### Set directory
+```{r}
+curr_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+setwd(curr_dir)
+```
+
+
+### Set years & months
+```{r}
+begYEAR = 1988
+endYEAR = 2020
+
+begMONTH = 8
+endMONTH = 9
+```
+
+### Source code to create seasons, then define seasons
+
+```{r}
+source('makeSeasons.R')
+
+# MONTHLY SEASONS
+    ssn_beg=rbind(c(8,1), c(9,1))
+    ssn_end=rbind(c(8,31),c(9,30))
+# 2-MONTH SEASONS
+    # ssn_beg=rbind(c(8,1))
+    # ssn_end=rbind(c(9,30))
+# 2-WEEK SEASONS
+#    ssn_beg=rbind(c(8,1), c(8,16), c(9,1), c(9,16))
+#    ssn_end=rbind(c(8,15), c(8,31), c(9,15), c(9,30))
+```
+
+### Check for / get data
+
+```{r}
+# if necessary, download the data
+#file_loc = "~/Documents/WorkDocuments/Projects/Fundy/Dan & Kelsey All FUNDY data 05-19-2023.CSV"
+file_loc = paste0(curr_dir, "/data/", "Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV")
+if (!file.exists(file_loc)){ #if file already exists, this statement will not be 
+  
+  is_googledrive_available <- require("googledrive") #logial variable indicating if the package is installed
+  
+  # install googledrive if necessary
+  if (is_googledrive_available == FALSE){
+    install.packages("googledrive")
+  }
+
+  #download the file
+  library("googledrive")
+  setwd(paste0(curr_dir, "/data/"))
+  drive_download("Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV")
+  setwd(curr_dir)  
+}
+
+```
+
+### Read data
+
+```{r}
+dat <- read_csv(file = file_loc, 
+                col_types = cols(FILEID = col_character(),
+                                 EVENTNO = col_double(),
+                                 MONTH = col_double(),
+                                 DAY = col_double(),
+                                 YEAR = col_double(),
+                                 GMT = col_double(),
+                                 LATITUDE = col_double(),
+                                 LONGITUDE = col_double(),
+                                 LEGTYPE = col_double(),
+                                 LEGSTAGE = col_double(),
+                                 ALT = col_double(),
+                                 HEADING = col_double(),
+                                 WX = col_character(),
+                                 CLOUD = col_double(),
+                                 VISIBLTY = col_double(),
+                                 BEAUFORT = col_double(),
+                                 SPECCODE = col_character(),
+                                 IDREL = col_double(),
+                                 NUMBER = col_double(),
+                                 CONFIDNC = col_double())
+)
+```
+
+### Amend / cull the dataset
+
+```{r}
+#drop come columns
+dat <- dat %>%
+  dplyr::select(-starts_with("BEHAV", ignore.case = FALSE, vars = NULL))
+#dplyr::select(-c(WX, CLOUD, HEADING, NUMCALF, ANHEAD, PHOTOS))
+
+#restrict to Nereid
+dat <- dat %>%
+  filter(PLATFORM == 99)
+
+# discard opportunistic surveys
+dat <- dat %>%
+  mutate(fileid = str_sub(FILEID, start = 1, end = 1)) %>% 
+  filter(fileid == "P" | fileid == "p") %>%
+  dplyr::select(-fileid)
+
+#add date column
+dat$date_ymd <- as.Date(with(dat,paste(YEAR,MONTH,DAY,sep="-")),"%Y-%m-%d")
+dat$date_jday = format(dat$date_ymd,"%j")
+
+# keep only desired years and months
+dat <- dat %>%
+  filter(YEAR >= begYEAR & YEAR <= endYEAR)
+dat <- dat %>%
+  filter(MONTH == begMONTH | MONTH == endMONTH)
+
+```
+
+### Generate seasons and append to the dataset
+
+```{r}
+# create seasons matrix
+season <- makeSeasons(begYEAR,endYEAR,ssn_beg,ssn_end)
+ssn_beg_date <- as.Date(paste(season[,1],season[,2],season[,3],sep="-"),"%Y-%m-%d")
+ssn_end_date <- as.Date(paste(season[,1],season[,4],season[,5],sep="-"),"%Y-%m-%d")
+ssn_no = season$SSN_NO
+num_ssn = max(ssn_no)
+ssn_no_grpd = season$SSN_GRPD_NO
+
+# insert columns with season and season_grpd
+dat$season = NA
+dat$season_grpd = NA
+for (i in 1:length(ssn_beg_date)){
+  I = which(dat$date_ymd >= ssn_beg_date[i] & dat$date_ymd <= ssn_end_date[i])
+  dat$season[I] = ssn_no[i]
+  dat$season_grpd[I] = ssn_no_grpd[i]
+}
+
+```
+
+### Flag on/off effort
+
+```{r}
+
+# normally require sea state 0-3, but sea state will be covariate on detection in this model
+dat <- dat %>%
+  mutate(on.off.eff = if_else((BEAUFORT <= 6 & 
+                                 #start, continue, end watch while ship not underway
+                                 ((LEGTYPE == 5 & (LEGSTAGE == 1 | LEGSTAGE == 2 | LEGSTAGE == 5)) | 
+                                    #legtype = 6 indicates ship not underway (listening station)
+                                     (LEGTYPE == 6 & (LEGSTAGE == 1 | LEGSTAGE == 2 | LEGSTAGE == 5)) ) & 
+                                 #pre-2020 changes to NARWC Sightings Database, VISIBLTY >=2 or -1 indicates
+                                 #visibility of at least 2 nautical miles. Negative numbers are no longer used,
+                                 #however this dataset was obtained in 2019 before the change.
+                                 (VISIBLTY >=2 | VISIBLTY == -1) &  
+                                 # if there is a sighting, IDREL must = 3. If no sightings, then IDREL should be NA
+                                 (IDREL == 3 | is.na(IDREL)) 
+  ), 
+  1, 0)) %>%
+  #now replace all NA with 0 because those are off-effort
+  mutate(on.off.eff = ifelse(is.na(on.off.eff), 0, on.off.eff)
+  )
+```
+
+### Reduce size of dataset by removing some columns
+
+```{r}
+keep.cols <- c("FILEID", 
+               "EVENTNO", 
+               "YEAR", "MONTH", "DAY", 
+               "BEAUFORT", 
+               "LEGTYPE", "LEGSTAGE", 
+               "LATITUDE", "LONGITUDE", 
+               "SPECCODE", "IDREL", "NUMBER", 
+               "date_ymd", "date_jday", 
+               "on.off.eff", 
+               "season", "season_grpd")
+tmpdat <- dat %>%
+  dplyr::select(all_of(keep.cols)) #%>%
+rm(keep.cols)
+```
+
+### Option to write out data
+
+```{r}
+#write.csv(dat, file = "dat_with_dist.csv")
+#write.csv(tmpdat, file = "tmpdat.csv")
+```
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+
+The `echo: false` option disables the printing of code (only output is displayed).
