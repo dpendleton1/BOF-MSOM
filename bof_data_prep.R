@@ -2,6 +2,7 @@
 library(tidyverse)
 
 # if necessary, download the data
+#file_loc = "~/Documents/WorkDocuments/Projects/Fundy/Dan & Kelsey All FUNDY data 05-19-2023.CSV"
 file_loc = paste0(curr_dir, "/data/", "Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV")
 if (!file.exists(file_loc)){ #if file already exists, this statement will not be 
   
