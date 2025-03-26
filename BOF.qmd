@@ -5,31 +5,38 @@ format: html
 editor: visual
 ---
 
+## Purpose
+
+The purpose of this code is to pre-process data for the BOF JAGS model
+
 ### Load all libraries
+
 ```{r}
 library(tidyverse)
 library(sf)
 library(dplyr)
-library(webshot) #needed to save maps. on new systems, may have to do: webshot::install_phantomjs()
+#needed to save maps. on new systems, may have to do: webshot::install_phantomjs()
+library(webshot) 
 library(mapview) 
 library(tmap)
-library(R2jags)
-library(rjags)
 library(foreign)
-library(dclone) # built-in functionality for parallel MCMC with jags via jags.parfit()
 library(viridis)
 library(fields)
+#library(dclone) # built-in functionality for parallel MCMC with jags via jags.parfit()
+#library(R2jags)
+#library(rjags)
 ```
 
-
 ### Set directory
+
 ```{r}
 curr_dir <- dirname(rstudioapi::getSourceEditorContext()$path)
+print(curr_dir)
 setwd(curr_dir)
 ```
 
-
 ### Set years & months
+
 ```{r}
 begYEAR = 1988
 endYEAR = 2020
@@ -38,44 +45,30 @@ begMONTH = 8
 endMONTH = 9
 ```
 
-### Source code to create seasons, then define seasons
-
-```{r}
-source('makeSeasons.R')
-
-# MONTHLY SEASONS
-    ssn_beg=rbind(c(8,1), c(9,1))
-    ssn_end=rbind(c(8,31),c(9,30))
-# 2-MONTH SEASONS
-    # ssn_beg=rbind(c(8,1))
-    # ssn_end=rbind(c(9,30))
-# 2-WEEK SEASONS
-#    ssn_beg=rbind(c(8,1), c(8,16), c(9,1), c(9,16))
-#    ssn_end=rbind(c(8,15), c(8,31), c(9,15), c(9,30))
-```
-
 ### Check for / get data
 
+Identify file location. If file doesn't exist, and if the *googledrive* package is not installed (such as on 2i2c) then install it and proceed. Finally, download the data from your google drive.
+
 ```{r}
-# if necessary, download the data
-#file_loc = "~/Documents/WorkDocuments/Projects/Fundy/Dan & Kelsey All FUNDY data 05-19-2023.CSV"
+
 file_loc = paste0(curr_dir, "/data/", "Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV")
-if (!file.exists(file_loc)){ #if file already exists, this statement will not be 
-  
-  is_googledrive_available <- require("googledrive") #logial variable indicating if the package is installed
+
+# if file does not exist ... ask if google drive is installed
+if (!file.exists(file_loc)){  
+  # return a logial saying if the package is installed
+  is_googledrive_installed <- require("googledrive") 
   
   # install googledrive if necessary
-  if (is_googledrive_available == FALSE){
+  if (is_googledrive_installed == FALSE){
     install.packages("googledrive")
   }
 
-  #download the file
+  #download the data from your google drive
   library("googledrive")
   setwd(paste0(curr_dir, "/data/"))
   drive_download("Copy of Dan & Kelsey All FUNDY data 05-19-2023.CSV")
   setwd(curr_dir)  
 }
-
 ```
 
 ### Read data
@@ -103,6 +96,7 @@ dat <- read_csv(file = file_loc,
                                  NUMBER = col_double(),
                                  CONFIDNC = col_double())
 )
+head(dat)
 ```
 
 ### Amend / cull the dataset
@@ -113,7 +107,7 @@ dat <- dat %>%
   dplyr::select(-starts_with("BEHAV", ignore.case = FALSE, vars = NULL))
 #dplyr::select(-c(WX, CLOUD, HEADING, NUMCALF, ANHEAD, PHOTOS))
 
-#restrict to Nereid
+#restrict to R/V Nereid
 dat <- dat %>%
   filter(PLATFORM == 99)
 
@@ -138,6 +132,18 @@ dat <- dat %>%
 ### Generate seasons and append to the dataset
 
 ```{r}
+source('makeSeasons.R')
+
+# MONTHLY SEASONS
+    ssn_beg=rbind(c(8,1), c(9,1))
+    ssn_end=rbind(c(8,31),c(9,30))
+# 2-MONTH SEASONS
+    # ssn_beg=rbind(c(8,1))
+    # ssn_end=rbind(c(9,30))
+# 2-WEEK SEASONS
+#    ssn_beg=rbind(c(8,1), c(8,16), c(9,1), c(9,16))
+#    ssn_end=rbind(c(8,15), c(8,31), c(9,15), c(9,30))
+
 # create seasons matrix
 season <- makeSeasons(begYEAR,endYEAR,ssn_beg,ssn_end)
 ssn_beg_date <- as.Date(paste(season[,1],season[,2],season[,3],sep="-"),"%Y-%m-%d")
@@ -155,27 +161,28 @@ for (i in 1:length(ssn_beg_date)){
   dat$season_grpd[I] = ssn_no_grpd[i]
 }
 
+head(dat)
 ```
 
 ### Flag on/off effort
 
 ```{r}
-
 # normally require sea state 0-3, but sea state will be covariate on detection in this model
 dat <- dat %>%
-  mutate(on.off.eff = if_else((BEAUFORT <= 6 & 
-                                 #start, continue, end watch while ship not underway
-                                 ((LEGTYPE == 5 & (LEGSTAGE == 1 | LEGSTAGE == 2 | LEGSTAGE == 5)) | 
-                                    #legtype = 6 indicates ship not underway (listening station)
-                                     (LEGTYPE == 6 & (LEGSTAGE == 1 | LEGSTAGE == 2 | LEGSTAGE == 5)) ) & 
-                                 #pre-2020 changes to NARWC Sightings Database, VISIBLTY >=2 or -1 indicates
-                                 #visibility of at least 2 nautical miles. Negative numbers are no longer used,
-                                 #however this dataset was obtained in 2019 before the change.
-                                 (VISIBLTY >=2 | VISIBLTY == -1) &  
-                                 # if there is a sighting, IDREL must = 3. If no sightings, then IDREL should be NA
-                                 (IDREL == 3 | is.na(IDREL)) 
-  ), 
-  1, 0)) %>%
+  mutate(on.off.eff = 
+           if_else((BEAUFORT <= 6 & 
+              #start, continue, end watch while ship not underway
+              ((LEGTYPE == 5 & (LEGSTAGE == 1 | LEGSTAGE == 2 | LEGSTAGE == 5)) | 
+              #legtype = 6 indicates ship not underway (listening station)
+              (LEGTYPE == 6 & (LEGSTAGE == 1 | LEGSTAGE == 2 | LEGSTAGE == 5)) ) & 
+              #pre-2020 changes to NARWC Sightings Database, 
+                #VISIBLTY >=2 or -1 indicates viz of at least 2 nautical miles. 
+                #Negative numbers are no longer used,
+                #however this dataset was obtained in 2019 before the change.
+              (VISIBLTY >=2 | VISIBLTY == -1) &  
+              # if there is a sighting, IDREL must = 3. 
+                #If no sightings, then IDREL should be NA
+              (IDREL == 3 | is.na(IDREL))), 1, 0)) %>%
   #now replace all NA with 0 because those are off-effort
   mutate(on.off.eff = ifelse(is.na(on.off.eff), 0, on.off.eff)
   )
@@ -207,6 +214,5 @@ rm(keep.cols)
 ```
 
 When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
 
 The `echo: false` option disables the printing of code (only output is displayed).
