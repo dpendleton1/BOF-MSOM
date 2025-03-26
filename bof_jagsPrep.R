@@ -9,7 +9,7 @@ library(webshot) #needed to save maps. on new systems, may have to do: webshot::
 library(mapview) #needed to make maps
 library(tmap)
 
-make_figs = 'yes' # 'no'
+make_figs = 'no' #'yes' # 'no'
 
 ## ADD GEOMETRY TO DATASET AND MAKE INTO SF OBJECT
 #matrix of lat and long
@@ -105,9 +105,6 @@ effort_linestring_list = vector("list", num_ssn) #holds effort for each survey a
 #effort_list = vector("list", num_ssn) #holds effort for each survey and cell, computed using pt2pt distances
 jday_list = vector("list", num_ssn) #holds jday for each survey and cell
 bft_list = vector("list", num_ssn) #holds beafort sea state for each survey and cell
-
-### DO YOU WANT TO MAKE SPECIES LIST OBJECTS RIGHT HERE? YOU COULD LOOP ABOUT SPECIES...
-### revisit this on 1/7/25
 
 ## CREATE ARRAYS TO HOLD SPECIES DETECTION HISTORIES & DETECTION COVARIATE ARRAYS FOR JAGS MODELLING
 # enumerate species and count them
@@ -213,8 +210,6 @@ for (i in 1:num_ssn){
         mutate(total_length = st_length(.)) %>%
         mutate(total_length_km = as.numeric(total_length)*0.001) %>% #changes length from [m] to <dbl> and converts from meters to kilometers
         group_by(grid_id)
-      
-    print(sum(intersection$total_length))
     
     #join the 'intersection' just created with grid_id. this creates a matrix with the same order as all the others (e.g. 'effort_linestring').
     #below, we add lengths from effort_joined into effort_linestring

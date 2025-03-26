@@ -28,6 +28,3 @@ source('makeSeasons.R')
 # 2-WEEK SEASONS
 #    ssn_beg=rbind(c(8,1), c(8,16), c(9,1), c(9,16))
 #    ssn_end=rbind(c(8,15), c(8,31), c(9,15), c(9,30))
-# SEASON FOR TESTING
-#ssn_beg = rbind(c(8,1), c(8,16))
-#ssn_end = rbind(c(8,15), c(8,31))
