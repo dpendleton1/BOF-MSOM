@@ -22,8 +22,6 @@ begMONTH = 8
 endMONTH = 9
 
 #seasons
-#source('~/Documents/WorkDocuments/Projects/Fundy/makeSeasons.R')
-source('makeSeasons.R')
 # MONTHLY SEASONS
 ssn_beg=rbind(c(8,1), c(9,1))
 ssn_end=rbind(c(8,31),c(9,30))
@@ -96,6 +94,7 @@ GMT_strings = paste(dat$date_ymd_gmt, GMT_strings) #append ymd to hms
 dat$datetime_GMT = ymd_hms(GMT_strings, tz = 'GMT') #convert
 dat$datetime_ET = with_tz(dat$datetime_GMT, "US/Eastern")
 dat$date_jday_ET = format(dat$datetime_ET,"%j") #calculate jday based on US/Eastern time
+rm(GMT_strings)
 
 #create Year Month Day columns based on US/Eastern tz
 dat$YEAR_ET <- as.numeric(format(dat$datetime_ET,"%Y"))
@@ -109,6 +108,7 @@ dat <- dat %>%
   filter(MONTH_ET == begMONTH | MONTH_ET == endMONTH)
 
 # create seasons matrix
+source('makeSeasons.R')
 season <- makeSeasons(begYEAR,endYEAR,ssn_beg,ssn_end)
 ssn_beg_date <- as.Date(paste(season[,1],season[,2],season[,3],sep="-"),"%Y-%m-%d")
 ssn_end_date <- as.Date(paste(season[,1],season[,4],season[,5],sep="-"),"%Y-%m-%d")
@@ -222,6 +222,7 @@ area_grid_sf = area_grid_sf %>% # add grid ID
 #number of cells in the grid
 num_cells = dim(area_grid_sf)[1]
 print(num_cells)
+rm(area_grid)
 
 #now that you have the grid set up, you should be able to create a new column in
 #tmpdat_sf for grid_id and label all the rows for each grid cell this may help 
@@ -250,7 +251,7 @@ print(max_survs)
 # need to produce one effort grid for each season. here we construct lists to hold these items. 
 # each season will be one element of effort_list, jday_list, and so on
 effort_drop_NA_list = vector("list", num_ssn) #list to hold positions of NA (needed for NA-ing out values in other matrices)
-effort_linestring_list = vector("list", num_ssn) #holds effort for each survey and cell, computed using linestrings
+effort_list = vector("list", num_ssn) #holds effort for each survey and cell, computed using linestrings
 jday_list = vector("list", num_ssn) #holds jday for each survey and cell
 bft_list = vector("list", num_ssn) #holds beafort sea state for each survey and cell
 
@@ -275,7 +276,7 @@ for (j in 1:num_spp){
 }
 
 # 3d matrices for effort and jday, and any other detection covariates
-effort3d_linestring = spp3d #effort from linestrings
+effort3d = spp3d #effort from linestrings
 jday3d = spp3d 
 bft3d = spp3d 
 
@@ -294,13 +295,13 @@ for (i in 1:num_ssn){
   num_season_ufids = length(season_ufids)
   
   # initialize temporary spatial arrays needed for intersecting within the loop about surveys/ufids
-  effort_linestring = area_grid_sf
+  effort = area_grid_sf
   jday = area_grid_sf
   bft = area_grid_sf
   
   #fill out columns to the maximum number of surveys
   #add two columns at the beginning to accommodate geometry and grid_id columns
-  effort_linestring[,3:(max_survs+2)] = NA
+  effort[,3:(max_survs+2)] = NA
   jday[,3:(max_survs+2)] = NA  
   bft[,3:(max_survs+2)] = NA
   
@@ -363,7 +364,7 @@ for (i in 1:num_ssn){
       left_join(st_drop_geometry(intersection), by = "grid_id")
     
     # store effort length from each grid cell into the column for survey j
-    effort_linestring[, j+2] = effort_joined$total_length_km
+    effort[, j+2] = effort_joined$total_length_km
     rm(effort_joined, intersection, nereid_tracks)
     
     # fill jday array. no need to loop about grid cells because jday is the same for every grid cell within each survey:
@@ -386,13 +387,13 @@ for (i in 1:num_ssn){
   }
   
   #name columns in 2D detection covariates
-  names(effort_linestring)[3:(num_season_ufids+2)] = season_ufids
+  names(effort)[3:(num_season_ufids+2)] = season_ufids
   names(jday)[3:(num_season_ufids+2)] = season_ufids
   names(bft)[3:(num_season_ufids+2)] = season_ufids
   
   # NA-out cells with no effort within jday, bft, other matricies
   # then get indices, then ask jday matrix (includes geom) to NA-out row/col elements where the non-geom effort matrix has NAs. That NA's out the correct spots in jday matrix.
-  effort_drop = st_drop_geometry(effort_linestring) # remove geom from effort
+  effort_drop = st_drop_geometry(effort) # remove geom from effort
   effort_drop_NA = which(is.na(effort_drop), arr.ind = T) # get row and column indices where effort matrix = NA
   effort_drop_NA[,2] = effort_drop_NA[,2]+1 # advance the column by one, to correct for the geom column present in matrices
   effort_drop_NA_list[[i]] = effort_drop_NA # insert into a list object. do not delete - needed in spp section
@@ -401,7 +402,7 @@ for (i in 1:num_ssn){
   rm(effort_drop, effort_drop_NA) #do not delete effort_drop_NA_list[[]], as it is needed to NA-out cells in spp arrays below
   
   ## now we would like to know, for each site, how many repeat visits do we have within the season?
-  repeatVisits = st_drop_geometry(effort_linestring) #drop geom
+  repeatVisits = st_drop_geometry(effort) #drop geom
   repeatVisits = repeatVisits[,-1] #remove first column (grid_id)
   repeatVisits[is.na(repeatVisits)] = 0 #change NA to zero
   repeatVisits[repeatVisits>0] = 1 #change effort>0 to 1
@@ -410,7 +411,7 @@ for (i in 1:num_ssn){
   reps[i,] = repeatVisits
   
   # fill 3d effort_linestring matrix
-  cmd = paste("effort3d_linestring[,,", i, "] = as.matrix(st_drop_geometry(effort_linestring))", sep = "")
+  cmd = paste("effort3d[,,", i, "] = as.matrix(st_drop_geometry(effort))", sep = "")
   print(cmd)
   eval(parse(text = cmd))
   
@@ -426,7 +427,7 @@ for (i in 1:num_ssn){
   
   # ### # optional: produce lists for each detection variable
   # # # spatialize effort_list and jday_list, for uyear[i]
-  # effort_linestring_list[[i]] = area_grid_sf
+  # effort_list[[i]] = area_grid_sf
   # jday_list[[i]] = area_grid_sf
   # bft_list[[i]] = area_grid_sf
   # 
@@ -436,7 +437,7 @@ for (i in 1:num_ssn){
   # ###
   
   #no longer need 2D versions of detection covariates, as they are stored in the '_list' versions 
-  rm(effort_linestring, jday, bft)
+  rm(effort, jday, bft)
   
   # loop about species
   for (j in 1:num_spp){
@@ -506,7 +507,11 @@ for (i in 1:num_ssn){
     eval(parse(text = cmd))
     
     # remove unnecessary matrices
-    cmd = paste("rm(", spp[j], ", ", spp[j], "_survey, ", spp_ssn_name, ")", sep = "")
+    cmd = paste("rm(", spp[j], ", ",
+                spp[j], "_survey, ", spp_ssn_name, ", ",
+                spp[j], "_season", ", ",
+                spp[j], "_season_survey",
+                ")", sep = "")
     print(cmd)
     eval(parse(text = cmd))
     
